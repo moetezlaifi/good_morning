@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>for you</title>
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1220;
+      --ink:#EAF0FF;
+      --muted:rgba(234,240,255,.72);
+      --glass:rgba(255,255,255,.06);
+      --glass2:rgba(255,255,255,.09);
+      --stroke:rgba(255,255,255,.14);
+      --shadow: 0 22px 70px rgba(0,0,0,.55);
+      --shine: rgba(255,255,255,.22);
+      --pink: rgba(255, 150, 210, .75);
+      --peach: rgba(255, 195, 135, .75);
+      --sky: rgba(140, 200, 255, .70);
+      --mint: rgba(145, 255, 225, .55);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(255,150,210,.18), transparent 60%),
+                  radial-gradient(1100px 650px at 85% 15%, rgba(140,200,255,.16), transparent 60%),
+                  radial-gradient(900px 600px at 60% 90%, rgba(145,255,225,.10), transparent 60%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow:hidden;
+    }
+
+    /* ---------- Ambient animated aurora ---------- */
+    .aurora{
+      position:fixed; inset:-20%;
+      filter: blur(40px);
+      opacity:.65;
+      background:
+        radial-gradient(40% 30% at 25% 25%, rgba(255,150,210,.45), transparent 55%),
+        radial-gradient(35% 30% at 70% 30%, rgba(140,200,255,.42), transparent 55%),
+        radial-gradient(40% 30% at 55% 70%, rgba(255,195,135,.35), transparent 55%),
+        radial-gradient(35% 35% at 30% 75%, rgba(145,255,225,.26), transparent 55%);
+      animation: drift 14s ease-in-out infinite alternate;
+      transform: translate3d(0,0,0);
+      pointer-events:none;
+    }
+    @keyframes drift{
+      0%{transform: translate(-2%, -3%) scale(1.02) rotate(-2deg)}
+      50%{transform: translate(3%, 2%) scale(1.05) rotate(2deg)}
+      100%{transform: translate(-1%, 4%) scale(1.03) rotate(-1deg)}
+    }
+
+    /* ---------- Particles layer ---------- */
+    canvas{
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:.85;
+      mix-blend-mode: screen;
+    }
+
+    /* ---------- Layout ---------- */
+    .wrap{
+      position:relative;
+      min-height:100%;
+      display:grid;
+      place-items:center;
+      padding:28px 18px;
+    }
+    .stage{
+      width:min(920px, 100%);
+      perspective: 1000px;
+    }
+
+    /* ---------- Card ---------- */
+    .card{
+      position:relative;
+      border-radius: 28px;
+      background: linear-gradient(180deg, var(--glass), rgba(255,255,255,.03));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    /* subtle inner glow */
+    .card::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(500px 240px at 20% 10%, rgba(255,255,255,.14), transparent 60%),
+        radial-gradient(420px 220px at 90% 20%, rgba(255,255,255,.10), transparent 55%),
+        radial-gradient(560px 260px at 30% 90%, rgba(255,255,255,.08), transparent 60%);
+      opacity:.9;
+      pointer-events:none;
+    }
+
+    /* glossy highlight that tracks cursor */
+    .shine{
+      position:absolute; inset:-120px;
+      background: radial-gradient(280px 220px at var(--sx, 50%) var(--sy, 30%), var(--shine), transparent 60%);
+      opacity:.65;
+      pointer-events:none;
+      transform: translateZ(30px);
+    }
+
+    /* top badge */
+    .badge{
+      position:absolute; top:18px; right:18px;
+      padding:10px 12px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border: 1px solid rgba(255,255,255,.14);
+      display:flex; align-items:center; gap:10px;
+      transform: translateZ(40px);
+    }
+    .badge .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,0) 60%),
+                  radial-gradient(circle at 70% 70%, rgba(255,195,135,.8), rgba(255,195,135,0) 62%);
+      filter: drop-shadow(0 0 18px rgba(255,195,135,.35));
+    }
+    .badge span{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:rgba(234,240,255,.75)}
+
+    .content{
+      position:relative;
+      padding: 44px 34px 36px;
+      transform: translateZ(22px);
+    }
+
+    .kicker{
+      color: rgba(234,240,255,.65);
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      font-size:12px;
+    }
+
+    h1{
+      margin: 12px 0 10px;
+      font-size: clamp(34px, 4.3vw, 58px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .sub{
+      margin:0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .row{
+      display:flex; flex-wrap:wrap; gap:12px;
+      align-items:center;
+      margin-top: 22px;
+    }
+
+    .btn{
+      position:relative;
+      border:0;
+      cursor:pointer;
+      padding: 12px 16px;
+      border-radius: 999px;
+      color: rgba(10,12,20,.96);
+      font-weight: 700;
+      letter-spacing: .01em;
+      background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(255,255,255,.78));
+      box-shadow: 0 18px 35px rgba(0,0,0,.25);
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.03); box-shadow: 0 26px 55px rgba(0,0,0,.28); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+    .btn .arrow{opacity:.75; margin-left:8px; transition: transform .18s ease}
+    .btn:hover .arrow{transform: translateX(2px)}
+    .pill{
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      color: rgba(234,240,255,.75);
+      font-size: 13px;
+    }
+
+    .reveal{
+      margin-top: 22px;
+      display:none;
+    }
+    .panel{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      padding: 18px 18px 16px;
+      overflow:hidden;
+    }
+
+    .msg{
+      font-size: 18px;
+      line-height: 1.75;
+      color: rgba(234,240,255,.92);
+      margin:0;
+    }
+    .muted{
+      margin-top:10px;
+      font-size: 13px;
+      color: rgba(234,240,255,.62);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width:720px){
+      .content{padding:38px 20px 28px}
+      .grid{grid-template-columns: 1fr; }
+    }
+
+    .tile{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      padding: 14px;
+      min-height: 78px;
+      position:relative;
+      overflow:hidden;
+    }
+    .tile::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(220px 120px at 20% 10%, rgba(255,150,210,.18), transparent 60%),
+                  radial-gradient(220px 120px at 80% 40%, rgba(140,200,255,.16), transparent 60%);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .tile b{
+      display:block;
+      font-size: 13px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(234,240,255,.75);
+      margin-bottom: 8px;
+      position:relative;
+    }
+    .tile span{
+      position:relative;
+      color: rgba(234,240,255,.86);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .sig{
+      margin-top: 14px;
+      color: rgba(234,240,255,.58);
+      font-size: 13px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .sig .hint{
+      display:flex; gap:8px; align-items:center;
+    }
+    .sig .hint i{
+      width:8px; height:8px; border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,0) 60%),
+                  radial-gradient(circle at 70% 70%, rgba(145,255,225,.9), rgba(145,255,225,0) 62%);
+      filter: drop-shadow(0 0 18px rgba(145,255,225,.24));
+    }
+
+    /* ---------- Reveal animation ---------- */
+    .pop{ animation: pop .7s cubic-bezier(.2,.9,.2,1) both; }
+    @keyframes pop{
+      from{opacity:0; transform: translateY(10px) scale(.98)}
+      to{opacity:1; transform: translateY(0) scale(1)}
+    }
+    .stagger > *{ opacity:0; transform: translateY(8px); }
+    .stagger.show > *{ animation: up .7s ease forwards; }
+    .stagger.show > *:nth-child(1){ animation-delay: .05s }
+    .stagger.show > *:nth-child(2){ animation-delay: .15s }
+    .stagger.show > *:nth-child(3){ animation-delay: .25s }
+    .stagger.show > *:nth-child(4){ animation-delay: .35s }
+    @keyframes up{
+      to{opacity:1; transform: translateY(0)}
+    }
+
+    /* ---------- Tiny footer glow line ---------- */
+    .line{
+      height:1px;
+      margin-top: 18px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+      opacity:.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <canvas id="particles"></canvas>
+
+  <div class="wrap">
+    <div class="stage" id="stage">
+      <div class="card" id="card">
+        <div class="shine" id="shine"></div>
+
+        <div class="badge">
+          <div class="dot"></div>
+          <span id="datePill">morning</span>
+        </div>
+
+        <div class="content">
+          <div class="kicker">a tiny page • made to feel warm</div>
+          <h1 id="title">Good morning 🌙→☀️</h1>
+          <p class="sub" id="subtitle">
+            If last night felt a little quiet, this is me showing up gently this morning.
+          </p>
+
+          <div class="row">
+            <button class="btn" id="open">
+              open your message <span class="arrow">→</span>
+            </button>
+            <div class="pill" id="softPill">tap once • keep it soft</div>
+          </div>
+
+          <div class="reveal" id="reveal">
+            <div class="panel pop">
+              <div class="stagger" id="stagger">
+                <p class="msg" id="msg"></p>
+
+                <div class="grid">
+                  <div class="tile">
+                 <b>Today</b>
+<span>
+May today move gently around you.  
+May things fall into place softly, the way they seem to when you’re near.
+</span>
+</div>
+
+<div class="tile">
+  <b>You</b>
+  <span>
+There’s a quiet kind of beauty about you —  
+the kind that doesn’t ask for attention, but keeps it anyway.
+  </span>
+</div>
+
+<div class="tile">
+  <b>Us</b>
+  <span>
+Whatever this day brings, I’m here — steady, intentional, and choosing you with care.
+  </span>
+</div>
+
+                <div class="sig">
+                  <span>— from someone who thinks you’re very special</span>
+                  <span class="hint"><i></i> keep this open for a minute ✨</span>
+                </div>
+              </div>
+
+              <div class="line"></div>
+
+              <div class="row" style="margin-top:14px">
+                <button class="btn" id="extraBtn" style="background:linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,255,255,.70));">
+                  one more tiny thing <span class="arrow">→</span>
+                </button>
+                <div class="pill" id="extraText" style="display:none">
+                  if you’re still a bit upset, that’s okay. I’m here — no defensiveness.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== Personalize in 5 seconds ======
+    const herName = ""; // e.g. "Lina" (optional)
+    // =====================================
+
+    // Date pill
+    const d = new Date();
+    const dateStr = d.toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+    document.getElementById("datePill").textContent = dateStr;
+
+    // Title personalization
+    if (herName.trim()) {
+      document.getElementById("title").textContent = `Good morning, ${herName} ☀️`;
+    }
+
+    // Message variants (no explicit apology)
+    const messages = [
+      `I wanted you to wake up to something soft. Just a quiet reminder: you matter, and you’re on my mind.`,
+      `A warm little page for your morning. You’re precious — and I hope today treats you gently.`,
+      `If the night was a bit quiet, I’m here this morning. You deserve warmth, not wondering.`
+    ];
+
+    // Stable daily pick
+    const seed = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+    const pick = (arr) => arr[seed % arr.length];
+
+    const openBtn = document.getElementById("open");
+    const reveal = document.getElementById("reveal");
+    const msgEl = document.getElementById("msg");
+    const stagger = document.getElementById("stagger");
+
+    openBtn.addEventListener("click", () => {
+      msgEl.textContent = pick(messages);
+      reveal.style.display = "block";
+      openBtn.style.display = "none";
+      document.getElementById("softPill").textContent = "opened • keep breathing";
+      requestAnimationFrame(() => stagger.classList.add("show"));
+    });
+
+    // Extra soft line toggle
+    document.getElementById("extraBtn").addEventListener("click", () => {
+      const t = document.getElementById("extraText");
+      t.style.display = (t.style.display === "none" || !t.style.display) ? "block" : "none";
+    });
+
+    // 3D tilt + shine tracking
+    const card = document.getElementById("card");
+    const stage = document.getElementById("stage");
+    const shine = document.getElementById("shine");
+
+    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+    stage.addEventListener("mousemove", (e) => {
+      const r = stage.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+
+      const rotY = (px - 0.5) * 10;     // left/right
+      const rotX = (0.5 - py) * 10;     // up/down
+
+      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      shine.style.setProperty("--sx", (px*100).toFixed(1) + "%");
+      shine.style.setProperty("--sy", (py*100).toFixed(1) + "%");
+    });
+
+    stage.addEventListener("mouseleave", () => {
+      card.style.transform = "rotateX(0deg) rotateY(0deg)";
+      shine.style.setProperty("--sx", "50%");
+      shine.style.setProperty("--sy", "30%");
+    });
+
+    // Particles (sparkles + soft hearts)
+    const canvas = document.getElementById("particles");
+    const ctx = canvas.getContext("2d");
+    let W, H, DPR;
+
+    function resize(){
+      DPR = Math.min(2, window.devicePixelRatio || 1);
+      W = canvas.width = Math.floor(window.innerWidth * DPR);
+      H = canvas.height = Math.floor(window.innerHeight * DPR);
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const glyphs = ["✦","✧","✨","♡","⋆"];
+    const particles = Array.from({length: 55}).map(() => spawn(true));
+
+    function spawn(initial=false){
+      const x = Math.random() * window.innerWidth;
+      const y = initial ? Math.random()*window.innerHeight : window.innerHeight + 30 + Math.random()*120;
+      return {
+        x, y,
+        vy: 0.35 + Math.random()*0.9,
+        vx: (-0.25 + Math.random()*0.5),
+        s: 10 + Math.random()*18,
+        a: 0.18 + Math.random()*0.45,
+        g: glyphs[(Math.random()*glyphs.length)|0],
+        t: Math.random()*Math.PI*2
+      };
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+      for(let i=0;i<particles.length;i++){
+        const p = particles[i];
+        p.t += 0.01;
+        p.x += p.vx + Math.sin(p.t)*0.15;
+        p.y -= p.vy;
+        if(p.y < -40 || p.x < -60 || p.x > window.innerWidth + 60){
+          particles[i] = spawn(false);
+          continue;
+        }
+        ctx.globalAlpha = p.a;
+        ctx.font = `${p.s}px ui-sans-serif, system-ui, -apple-system, Segoe UI`;
+        // soft gradient-ish by alternating fill
+        if(p.g === "♡"){
+          ctx.fillStyle = "rgba(255,150,210,.55)";
+        } else if(p.g === "✨"){
+          ctx.fillStyle = "rgba(255,195,135,.55)";
+        } else {
+          ctx.fillStyle = "rgba(140,200,255,.45)";
+        }
+        ctx.fillText(p.g, p.x, p.y);
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
